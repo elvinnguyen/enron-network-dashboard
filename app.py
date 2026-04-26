@@ -1,9 +1,10 @@
-import streamlit as st
-import pandas as pd
+import matplotlib.pyplot as plt
+import networkit as nk
 import networkx as nx
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
+import streamlit as st
 
 st.set_page_config(page_title="Enron Data Set Dashboard", layout="wide")
 
@@ -79,7 +80,7 @@ def plot_degree_hist(G, title="Degree distribution"):
     plt.title(title)
     plt.xlabel("Degree k")
     plt.ylabel("Count of nodes")
-    plt.show()
+    st.pyplot(plt)
 
 
 def plot_centrality_hist(G, title="Centrality distribution"):
@@ -90,7 +91,7 @@ def plot_centrality_hist(G, title="Centrality distribution"):
     plt.title(title)
     plt.xlabel("Centrality")
     plt.ylabel("Count of nodes")
-    plt.show()
+    st.pyplot(plt)
 
 
 def loglog_degree_plot(G, title="Degree distribution (log-log)"):
@@ -126,6 +127,8 @@ G = nx.from_pandas_edgelist(
     df, source="FromNodeId", target="ToNodeId", create_using=nx.Graph()
 )
 
+G2 = nk.nxadapter.nx2nk(G)
+
 with tab1:
     st.header("Overview")
 
@@ -159,7 +162,7 @@ with tab1:
         ),
     )
 
-    st.write(df)
+    st.write(df.head(100))
 
 with tab2:
     st.header("Centrality")
@@ -181,3 +184,19 @@ with tab2:
         degree centrality, betweenness centrality, closeness centrality, and eigenvector centrality.
         """
     )
+
+    left, right = st.columns([1, 1.2])
+
+    deg_centrality = nk.centrality.DegreeCentrality(G2)
+    deg_centrality.run()
+    ranking = deg_centrality.ranking()[:10]
+
+    with left:
+        st.subheader("Top 10 Nodes by Degree Centrality")
+        st.dataframe(
+            pd.DataFrame(ranking, columns=["Node", "Degree Centrality"]).style.format(
+                {"Degree Centrality": "{:.0f}"}
+            )
+        )
+
+    plot_centrality_hist(G)
