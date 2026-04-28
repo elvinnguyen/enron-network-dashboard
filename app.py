@@ -1,3 +1,4 @@
+from matplotlib.pylab import partition
 import matplotlib.pyplot as plt
 import networkit as nk
 import networkx as nx
@@ -9,6 +10,7 @@ import streamlit as st
 st.set_page_config(page_title="Enron Data Set Dashboard", layout="wide")
 
 
+@st.cache_data
 def giant_component_subgraph(G):
     """Return the subgraph of the largest connected component (undirected)."""
     if G.number_of_nodes() == 0:
@@ -32,12 +34,6 @@ def graph_stats(G):
     C = nx.average_clustering(G) if n > 0 else float("nan")
 
     GCC = giant_component_subgraph(G)
-    # if GCC.number_of_nodes() >= 2 and nx.is_connected(GCC):
-    #    L = nx.average_shortest_path_length(GCC)
-    # else:
-    #    L = float('nan')
-
-    # return {"n": n, "m": m, "avg_deg": avg_deg, "C": C, "L_gcc": L, "gcc_size": GCC.number_of_nodes()}
     return {
         "n": n,
         "m": m,
@@ -73,7 +69,7 @@ def plot_degree_hist(G, title="Degree distribution"):
     st.pyplot(plt, use_container_width=True)
 
 
-def plot_centrality_hist(G, title="Centrality distribution"):
+def plot_deg_centrality_hist(G, title="Centrality distribution"):
     centrality = nx.degree_centrality(G)
     values = list(centrality.values())
     plt.figure(figsize=(6, 4))
@@ -82,6 +78,26 @@ def plot_centrality_hist(G, title="Centrality distribution"):
     plt.xlabel("Centrality")
     plt.ylabel("Count of nodes")
     st.pyplot(plt, use_container_width=True)
+
+
+def compute_deg_centrality(G):
+    deg_centrality = nk.centrality.DegreeCentrality(G)
+    deg_centrality.run()
+    return deg_centrality.ranking()[:10]
+
+
+def compute_betweenness_centrality(G, samples=1000, seed=42):
+    nk.setSeed(seed, False)
+
+    betweeness_centrality = nk.centrality.EstimateBetweenness(G, samples)
+    betweeness_centrality.run()
+    return betweeness_centrality.ranking()[:10]
+
+
+def compute_community_detection(G):
+    communities = nk.community.detectCommunities(G2, algo=nk.community.PLM(G2, True))
+
+    return communities
 
 
 st.title("Enron Data Set Dashboard")
@@ -173,13 +189,9 @@ with tab2:
 
     left, right = st.columns(2)
 
-    deg_centrality = nk.centrality.DegreeCentrality(G2)
-    deg_centrality.run()
-    deg_ranking = deg_centrality.ranking()[:10]
+    deg_ranking = compute_deg_centrality(G2)
 
-    betweeness_centrality = nk.centrality.EstimateBetweenness(G2, 1000)
-    betweeness_centrality.run()
-    betweeness_ranking = betweeness_centrality.ranking()[:10]
+    betweeness_ranking = compute_betweenness_centrality(G2, samples=1000, seed=42)
 
     with left:
         st.subheader("Top 10 Nodes by Degree Centrality")
@@ -189,12 +201,17 @@ with tab2:
             ).style.format({"Degree Centrality": "{:.0f}"})
         )
     with right:
+        plot_deg_centrality_hist(G)
+
+    with left:
         st.subheader("Top 10 Nodes by Betweenness Centrality")
         st.dataframe(
             pd.DataFrame(
                 betweeness_ranking, columns=["Node", "Betweenness Centrality"]
             ).style.format({"Betweenness Centrality": "{:.0f}"})
         )
+    with right:
+        pass
 
 with tab3:
     st.header("Community Detection")
@@ -215,6 +232,24 @@ with tab3:
         There are various algorithms for community detection, such as modularity-based methods, spectral clustering, and label propagation.
         """
     )
+
+    communities = compute_community_detection(G2)
+
+    st.subheader("Community Detection Results")
+    st.metric("Number of Communities Detected", communities.numberOfSubsets())
+
+    st.write("Community Sizes:")
+    st.dataframe(
+        pd.DataFrame(
+            sorted(communities.subsetSizes(), reverse=True),
+            columns=["Community Size"],
+        )
+    )
+
+    st.write(
+        f"Average community size: {G2.numberOfNodes() / communities.numberOfSubsets():.2f}"
+    )
+
 
 with tab4:
     st.header("Interpretation and Limitations")
