@@ -63,16 +63,6 @@ def draw_graph(G, title="", layout="spring", node_size=40):
     plt.show()
 
 
-def draw_graph_large(G, title=""):
-    plt.figure(figsize=(10, 8))
-    pos = nx.spectral_layout(G)  # O(n log n), no iteration
-    nx.draw_networkx_nodes(G, pos, node_size=1, alpha=0.3)
-    nx.draw_networkx_edges(G, pos, width=0.1, alpha=0.1)
-    plt.title(title)
-    plt.axis("off")
-    plt.show()
-
-
 def plot_degree_hist(G, title="Degree distribution"):
     degrees = [d for _, d in G.degree()]
     plt.figure(figsize=(6, 4))
@@ -80,7 +70,7 @@ def plot_degree_hist(G, title="Degree distribution"):
     plt.title(title)
     plt.xlabel("Degree k")
     plt.ylabel("Count of nodes")
-    st.pyplot(plt)
+    st.pyplot(plt, use_container_width=True)
 
 
 def plot_centrality_hist(G, title="Centrality distribution"):
@@ -91,33 +81,15 @@ def plot_centrality_hist(G, title="Centrality distribution"):
     plt.title(title)
     plt.xlabel("Centrality")
     plt.ylabel("Count of nodes")
-    st.pyplot(plt)
-
-
-def loglog_degree_plot(G, title="Degree distribution (log-log)"):
-    degrees = np.array([d for _, d in G.degree()])
-    unique, counts = np.unique(degrees, return_counts=True)
-    pk = counts / counts.sum()
-
-    # Remove zero degrees for log scale
-    mask = unique > 0
-    unique = unique[mask]
-    pk = pk[mask]
-
-    plt.figure(figsize=(6, 4))
-    plt.scatter(unique, pk)
-    plt.xscale("log")
-    plt.yscale("log")
-    plt.xlabel("k (degree)")
-    plt.ylabel("P(k)")
-    plt.title(title)
-    plt.show()
+    st.pyplot(plt, use_container_width=True)
 
 
 st.title("Enron Data Set Dashboard")
 st.write("Placeholder")
 
-tab1, tab2, tab3 = st.tabs(["Overview", "Centrality", "Community Detection"])
+tab1, tab2, tab3, tab4 = st.tabs(
+    ["Overview", "Centrality", "Community Detection", "Interpretation and Limitations"]
+)
 
 df = pd.read_csv(
     "email-Enron.txt", sep="\t", comment="#", names=["FromNodeId", "ToNodeId"]
@@ -142,14 +114,18 @@ with tab1:
     )
 
     st.markdown(
-        """### What is the Enron Data Set?
+        """
+        ### What is the Enron Data Set?
         The Enron data set is a collection of emails from the Enron Corporation, which was an American energy company that went bankrupt in 2001. 
         The data set contains around 500,000 emails from about 150 users, mostly senior management of Enron. The emails were made public during the 
         investigation of the company's collapse and have since been used for various research purposes, including natural language processing, social 
         network analysis, and machine learning.
         """
     )
+
     df["FromNodeId"].nunique()
+    degree_distribution = df["FromNodeId"].value_counts()
+    degree_distribution.rename("Degree", inplace=True)
 
     c1, c2, c3 = st.columns(3)
     c1.metric("Nodes", G.number_of_nodes())
@@ -162,6 +138,15 @@ with tab1:
         ),
     )
 
+    left, right = st.columns(2)
+    with left:
+        st.subheader("Degree Distribution (Top 10)")
+        st.dataframe(degree_distribution.head(10))
+    with right:
+        # Degree distribution plot
+        plot_degree_hist(G)
+
+    st.subheader("Enron Email Data Sample")
     st.write(df.head(100))
 
 with tab2:
@@ -177,7 +162,8 @@ with tab2:
     )
 
     st.markdown(
-        """### What is Centrality?
+        """
+        ### What is Centrality?
         Centrality is a measure of the importance or influence of a node within a network. 
         In the context of social networks, centrality can help us identify key individuals who may 
         have significant influence over others. There are several types of centrality measures, including 
@@ -185,18 +171,67 @@ with tab2:
         """
     )
 
-    left, right = st.columns([1, 1.2])
+    left, right = st.columns(2)
 
     deg_centrality = nk.centrality.DegreeCentrality(G2)
     deg_centrality.run()
-    ranking = deg_centrality.ranking()[:10]
+    deg_ranking = deg_centrality.ranking()[:10]
+
+    betweeness_centrality = nk.centrality.EstimateBetweenness(G2, 1000)
+    betweeness_centrality.run()
+    betweeness_ranking = betweeness_centrality.ranking()[:10]
 
     with left:
         st.subheader("Top 10 Nodes by Degree Centrality")
         st.dataframe(
-            pd.DataFrame(ranking, columns=["Node", "Degree Centrality"]).style.format(
-                {"Degree Centrality": "{:.0f}"}
-            )
+            pd.DataFrame(
+                deg_ranking, columns=["Node", "Degree Centrality"]
+            ).style.format({"Degree Centrality": "{:.0f}"})
+        )
+    with right:
+        st.subheader("Top 10 Nodes by Betweenness Centrality")
+        st.dataframe(
+            pd.DataFrame(
+                betweeness_ranking, columns=["Node", "Betweenness Centrality"]
+            ).style.format({"Betweenness Centrality": "{:.0f}"})
         )
 
-    plot_centrality_hist(G)
+with tab3:
+    st.header("Community Detection")
+    st.markdown(
+        """
+        ### Guiding Questions
+        - What is community detection in the context of social networks?
+        - How can we detect communities in the Enron email network?
+        - What are the characteristics of the detected communities?
+        """
+    )
+
+    st.markdown(
+        """
+        ### What is Community Detection?
+        Community detection is the process of identifying groups of nodes in a network that are more densely connected to each other than to the rest of the network. 
+        In social networks, communities can represent groups of individuals who interact more frequently with each other than with those outside the group. 
+        There are various algorithms for community detection, such as modularity-based methods, spectral clustering, and label propagation.
+        """
+    )
+
+with tab4:
+    st.header("Interpretation and Limitations")
+    st.markdown(
+        """
+        ### Guiding Questions
+        - What are the limitations of our analysis of the Enron email network?
+        - How can we interpret the results of our centrality and community detection analyses?
+        - What are some potential biases or confounding factors in the Enron data set?
+        """
+    )
+
+    st.markdown(
+        """
+        ### Interpretation and Limitations
+        While analyzing the Enron email network can provide insights into the structure and dynamics of communication within the company, there are several limitations to consider. 
+        The data set may not be representative of all employees, as it primarily contains emails from senior management. Additionally, the data may be incomplete or contain errors, 
+        which could affect the accuracy of our analyses. Furthermore, centrality measures and community detection algorithms have their own assumptions and limitations, which should be taken into account when interpreting results.
+        """
+    )
