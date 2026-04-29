@@ -101,7 +101,7 @@ def compute_community_detection(G):
 
 
 st.title("Enron Data Set Dashboard")
-st.write("Placeholder")
+st.write("Analysis and Understanding")
 
 tab1, tab2, tab3, tab4 = st.tabs(
     ["Overview", "Centrality", "Community Detection", "Interpretation and Limitations"]
@@ -123,9 +123,10 @@ with tab1:
     st.markdown(
         """
         ### Guiding Questions
-        - What is the Enron data set?
-        - What are the key features of the data?
-        - What are some potential analyses we can perform with this data?
+        - What is the enron data set?
+        - Who are the most influential communicators in the network?
+        - Are there meaningful communities in the network or clusters in the network?
+        - Is the network highly centralized or fragmented?
         """
     )
 
@@ -171,8 +172,6 @@ with tab2:
     st.markdown(
         """
         ### Guiding Questions
-        - What is centrality in the context of social networks?
-        - How can we measure centrality in the Enron email network?
         - Who are the most central nodes in the Enron email network?
         """
     )
@@ -218,8 +217,6 @@ with tab3:
     st.markdown(
         """
         ### Guiding Questions
-        - What is community detection in the context of social networks?
-        - How can we detect communities in the Enron email network?
         - What are the characteristics of the detected communities?
         """
     )
@@ -227,9 +224,7 @@ with tab3:
     st.markdown(
         """
         ### What is Community Detection?
-        Community detection is the process of identifying groups of nodes in a network that are more densely connected to each other than to the rest of the network. 
-        In social networks, communities can represent groups of individuals who interact more frequently with each other than with those outside the group. 
-        There are various algorithms for community detection, such as modularity-based methods, spectral clustering, and label propagation.
+        271, 144, and 80 are the most central nodes. They are top of the charts for both betweeness and degree centrality.
         """
     )
 
