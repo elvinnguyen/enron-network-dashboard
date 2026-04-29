@@ -1,4 +1,3 @@
-from matplotlib.pylab import partition
 import matplotlib.pyplot as plt
 import networkit as nk
 import networkx as nx
@@ -89,13 +88,13 @@ def compute_deg_centrality(G):
 def compute_betweenness_centrality(G, samples=1000, seed=42):
     nk.setSeed(seed, False)
 
-    betweeness_centrality = nk.centrality.EstimateBetweenness(G, samples)
-    betweeness_centrality.run()
-    return betweeness_centrality.ranking()[:10]
+    betweenness_centrality = nk.centrality.EstimateBetweenness(G, samples)
+    betweenness_centrality.run()
+    return betweenness_centrality.ranking()[:10]
 
 
 def compute_community_detection(G):
-    communities = nk.community.detectCommunities(G2, algo=nk.community.PLM(G2, True))
+    communities = nk.community.detectCommunities(G, algo=nk.community.PLM(G, True))
 
     return communities
 
@@ -120,25 +119,21 @@ G2 = nk.nxadapter.nx2nk(G)
 with tab1:
     st.header("Overview")
 
-    st.markdown(
-        """
+    st.markdown("""
         ### Guiding Questions
         - What is the enron data set?
         - Who are the most influential communicators in the network?
         - Are there meaningful communities in the network or clusters in the network?
         - Is the network highly centralized or fragmented?
-        """
-    )
+        """)
 
-    st.markdown(
-        """
+    st.markdown("""
         ### What is the Enron Data Set?
         The Enron data set is a collection of emails from the Enron Corporation, which was an American energy company that went bankrupt in 2001. 
         The data set contains around 500,000 emails from about 150 users, mostly senior management of Enron. The emails were made public during the 
         investigation of the company's collapse and have since been used for various research purposes, including natural language processing, social 
         network analysis, and machine learning.
-        """
-    )
+        """)
 
     df["FromNodeId"].nunique()
     degree_distribution = df["FromNodeId"].value_counts()
@@ -169,28 +164,24 @@ with tab1:
 with tab2:
     st.header("Centrality")
 
-    st.markdown(
-        """
+    st.markdown("""
         ### Guiding Questions
         - Who are the most central nodes in the Enron email network?
-        """
-    )
+        """)
 
-    st.markdown(
-        """
+    st.markdown("""
         ### What is Centrality?
         Centrality is a measure of the importance or influence of a node within a network. 
         In the context of social networks, centrality can help us identify key individuals who may 
         have significant influence over others. There are several types of centrality measures, including 
         degree centrality, betweenness centrality, closeness centrality, and eigenvector centrality.
-        """
-    )
+        """)
 
     left, right = st.columns(2)
 
     deg_ranking = compute_deg_centrality(G2)
 
-    betweeness_ranking = compute_betweenness_centrality(G2, samples=1000, seed=42)
+    betweenness_ranking = compute_betweenness_centrality(G2, samples=1000, seed=42)
 
     with left:
         st.subheader("Top 10 Nodes by Degree Centrality")
@@ -199,6 +190,10 @@ with tab2:
                 deg_ranking, columns=["Node", "Degree Centrality"]
             ).style.format({"Degree Centrality": "{:.0f}"})
         )
+        st.write(
+            "271, 144, and 80 are the most central nodes. They are top of the charts for both betweenness and degree centrality, "
+            "which suggests they are likely influential communicators in the network."
+        )
     with right:
         plot_deg_centrality_hist(G)
 
@@ -206,7 +201,7 @@ with tab2:
         st.subheader("Top 10 Nodes by Betweenness Centrality")
         st.dataframe(
             pd.DataFrame(
-                betweeness_ranking, columns=["Node", "Betweenness Centrality"]
+                betweenness_ranking, columns=["Node", "Betweenness Centrality"]
             ).style.format({"Betweenness Centrality": "{:.0f}"})
         )
     with right:
@@ -214,19 +209,18 @@ with tab2:
 
 with tab3:
     st.header("Community Detection")
-    st.markdown(
-        """
+    st.markdown("""
         ### Guiding Questions
         - What are the characteristics of the detected communities?
-        """
-    )
+        """)
 
-    st.markdown(
-        """
+    st.markdown("""
         ### What is Community Detection?
-        271, 144, and 80 are the most central nodes. They are top of the charts for both betweeness and degree centrality.
-        """
-    )
+        Community detection is the process of identifying groups of nodes in a network that are more densely connected 
+        to each other than to the rest of the network. In social networks, communities can represent groups of individuals 
+        who interact more frequently with each other than with those outside the group. There are various algorithms for 
+        community detection, such as modularity-based methods, spectral clustering, and label propagation..
+        """)
 
     communities = compute_community_detection(G2)
 
@@ -248,20 +242,16 @@ with tab3:
 
 with tab4:
     st.header("Interpretation and Limitations")
-    st.markdown(
-        """
+    st.markdown("""
         ### Guiding Questions
         - What are the limitations of our analysis of the Enron email network?
         - How can we interpret the results of our centrality and community detection analyses?
         - What are some potential biases or confounding factors in the Enron data set?
-        """
-    )
+        """)
 
-    st.markdown(
-        """
+    st.markdown("""
         ### Interpretation and Limitations
         While analyzing the Enron email network can provide insights into the structure and dynamics of communication within the company, there are several limitations to consider. 
         The data set may not be representative of all employees, as it primarily contains emails from senior management. Additionally, the data may be incomplete or contain errors, 
         which could affect the accuracy of our analyses. Furthermore, centrality measures and community detection algorithms have their own assumptions and limitations, which should be taken into account when interpreting results.
-        """
-    )
+        """)
