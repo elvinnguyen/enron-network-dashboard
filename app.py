@@ -58,25 +58,44 @@ def draw_graph(G, title="", layout="spring", node_size=40):
     plt.show()
 
 
-def plot_degree_hist(G, title="Degree distribution"):
+def plot_degree_hist(G):
     degrees = [d for _, d in G.degree()]
-    plt.figure(figsize=(6, 4))
-    plt.hist(degrees, bins=20)
-    plt.title(title)
-    plt.xlabel("Degree k")
-    plt.ylabel("Count of nodes")
-    st.pyplot(plt, use_container_width=True)
+
+    fig = go.Figure(
+        data=[go.Histogram(x=degrees, nbinsx=30)],
+        layout=go.Layout(
+            title="Degree Distribution",
+            xaxis_title="Degree",
+            yaxis_title="Count of nodes",
+            yaxis=dict(
+                type="log",
+                tickvals=[1, 10, 100, 1000, 10000],
+            ),
+        ),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
-def plot_deg_centrality_hist(G, title="Centrality distribution"):
+def plot_deg_centrality_hist(G):
     centrality = nx.degree_centrality(G)
     values = list(centrality.values())
-    plt.figure(figsize=(6, 4))
-    plt.hist(values, bins=20)
-    plt.title(title)
-    plt.xlabel("Centrality")
-    plt.ylabel("Count of nodes")
-    st.pyplot(plt, use_container_width=True)
+
+    fig = go.Figure(
+        data=[go.Histogram(x=values, nbinsx=30)],
+        layout=go.Layout(
+            title="Degree Centrality distribution",
+            xaxis=dict(
+                title="Degree Centrality",
+                tickformat=".3f",
+            ),
+            yaxis_title="Count of nodes",
+            yaxis=dict(
+                type="log",
+                tickvals=[1, 10, 100, 1000, 10000],
+            ),
+        ),
+    )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 def compute_deg_centrality(G):
@@ -94,9 +113,27 @@ def compute_betweenness_centrality(G, samples=1000, seed=42):
 
 
 def compute_community_detection(G):
+    nk.setSeed(42, False)
     communities = nk.community.detectCommunities(G, algo=nk.community.PLM(G, True))
 
     return communities
+
+def plot_communities(communities):
+    sizes = communities.subsetSizes()
+    fig = go.Figure(
+            data=[go.Histogram(x=sizes, xbins=dict(start=0, end=max(sizes), size=100))],
+            layout=go.Layout(
+                title="Community Size Distribution",
+                xaxis_title="Community Size",
+                yaxis_title="Count of Communities",
+                yaxis=dict(
+                    type="log",
+                    tickvals=[1, 10, 100, 1000],
+                    ticktext=["1", "10", "100", "1000"],
+                ),
+            ),
+        )
+    st.plotly_chart(fig, use_container_width=True)
 
 
 st.title("Enron Data Set Dashboard")
@@ -225,19 +262,34 @@ with tab3:
     communities = compute_community_detection(G2)
 
     st.subheader("Community Detection Results")
-    st.metric("Number of Communities Detected", communities.numberOfSubsets())
+    c1, c2 = st.columns(2)
+    with c1:
+        st.metric("Number of Communities Detected", communities.numberOfSubsets())
+    with c2:
+        avg_size = G2.numberOfNodes() / communities.numberOfSubsets()
+        st.metric("Average community size:", f"{avg_size:.2f}")
 
-    st.write("Community Sizes:")
-    st.dataframe(
-        pd.DataFrame(
-            sorted(communities.subsetSizes(), reverse=True),
-            columns=["Community Size"],
+    left, right = st.columns(2)
+    with left:
+        st.write("Community Sizes:")
+        st.dataframe(
+            pd.DataFrame(
+                sorted(communities.subsetSizes(), reverse=True),
+                columns=["Community Size"],
+            )
         )
-    )
-
-    st.write(
-        f"Average community size: {G2.numberOfNodes() / communities.numberOfSubsets():.2f}"
-    )
+    with right:
+        plot_communities(communities)
+    st.markdown("""
+            ### Interpretation
+            The network contains a large number of communities, with a highly skewed distribution size, having 
+            few large communities and many small communities as shown by the distribution plot. This is common 
+            in social networks, where most individuals belong to small groups while a few belong to larger, more 
+            influential communities. The presence of larger communities may indicate that there are certain groups of
+            individuals who communicate more frequently with each other than with the rest of the network. This suggests 
+            that communication within the Enron network is highly fragmented, with many small groups and a limited number 
+            of highly connected hubs.
+        """)
 
 
 with tab4:
