@@ -118,21 +118,22 @@ def compute_community_detection(G):
 
     return communities
 
+
 def plot_communities(communities):
     sizes = communities.subsetSizes()
     fig = go.Figure(
-            data=[go.Histogram(x=sizes, xbins=dict(start=0, end=max(sizes), size=100))],
-            layout=go.Layout(
-                title="Community Size Distribution",
-                xaxis_title="Community Size",
-                yaxis_title="Count of Communities",
-                yaxis=dict(
-                    type="log",
-                    tickvals=[1, 10, 100, 1000],
-                    ticktext=["1", "10", "100", "1000"],
-                ),
+        data=[go.Histogram(x=sizes, xbins=dict(start=0, end=max(sizes), size=100))],
+        layout=go.Layout(
+            title="Community Size Distribution",
+            xaxis_title="Community Size",
+            yaxis_title="Count of Communities",
+            yaxis=dict(
+                type="log",
+                tickvals=[1, 10, 100, 1000],
+                ticktext=["1", "10", "100", "1000"],
             ),
-        )
+        ),
+    )
     st.plotly_chart(fig, use_container_width=True)
 
 
@@ -170,6 +171,9 @@ with tab1:
         The data set contains around 500,000 emails from about 150 users, mostly senior management of Enron. The emails were made public during the 
         investigation of the company's collapse and have since been used for various research purposes, including natural language processing, social 
         network analysis, and machine learning.
+        
+        **Note**: The original data set lists the total edges as 367,662. 
+                After removing duplicate edges, we have 183,831 unique edges in our graph. 
         """)
 
     df["FromNodeId"].nunique()
@@ -191,9 +195,18 @@ with tab1:
     with left:
         st.subheader("Degree Distribution (Top 10)")
         st.dataframe(degree_distribution.head(10))
+        st.markdown("""
+            This table highlights the top 10 nodes with the highest degree, 
+            which represent the most active communicators in the Enron email network.
+            """)
     with right:
         # Degree distribution plot
         plot_degree_hist(G)
+        st.markdown("""
+            The distribution skewed right, meaning that most nodes have few connections while
+            a small number of nodes have high connections. This suggests that the network contains
+            few highly connected hubs.
+            """)
 
     st.subheader("Enron Email Data Sample")
     st.write(df.head(100))
