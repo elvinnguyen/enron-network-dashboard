@@ -10,6 +10,19 @@ st.set_page_config(page_title="Enron Data Set Dashboard", layout="wide")
 
 
 @st.cache_data
+def load_graph():
+    df = pd.read_csv(
+        "email-Enron.txt", sep="\t", comment="#", names=["FromNodeId", "ToNodeId"]
+    )
+
+    G = nx.from_pandas_edgelist(
+        df, source="FromNodeId", target="ToNodeId", create_using=nx.Graph()
+    )
+
+    G2 = nk.nxadapter.nx2nk(G)
+    return df, G, G2
+
+
 def giant_component_subgraph(_G):
     """Return the subgraph of the largest connected component (undirected)."""
     if G.number_of_nodes() == 0:
@@ -148,15 +161,7 @@ tab1, tab2, tab3, tab4 = st.tabs(
     ["Overview", "Centrality", "Community Detection", "Interpretation and Limitations"]
 )
 
-df = pd.read_csv(
-    "email-Enron.txt", sep="\t", comment="#", names=["FromNodeId", "ToNodeId"]
-)
-
-G = nx.from_pandas_edgelist(
-    df, source="FromNodeId", target="ToNodeId", create_using=nx.Graph()
-)
-
-G2 = nk.nxadapter.nx2nk(G)
+df, G, G2 = load_graph()
 
 with tab1:
     st.header("Overview")
@@ -236,7 +241,7 @@ with tab1:
 
 with tab2:
     st.header("Centrality")
-    
+
     st.markdown("""
         ### Related Overarching Guiding Question
         - Who are the most influential communicators in the network?
