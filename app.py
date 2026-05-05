@@ -42,22 +42,6 @@ def graph_stats(G):
     }
 
 
-def draw_graph(G, title="", layout="spring", node_size=40):
-    """Draw graph with a chosen layout."""
-    plt.figure(figsize=(6, 5))
-    if layout == "spring":
-        pos = nx.spring_layout(G, seed=SEED)
-    elif layout == "circular":
-        pos = nx.circular_layout(G)
-    else:
-        pos = nx.spring_layout(G, seed=SEED)
-    nx.draw_networkx_nodes(G, pos, node_size=node_size, alpha=0.85)
-    nx.draw_networkx_edges(G, pos, width=0.6, alpha=0.35)
-    plt.title(title)
-    plt.axis("off")
-    plt.show()
-
-
 def plot_degree_hist(G):
     degrees = [d for _, d in G.degree()]
 
@@ -66,8 +50,8 @@ def plot_degree_hist(G):
         layout=go.Layout(
             title="Degree Distribution",
             xaxis_title="Degree",
-            yaxis_title="Count of nodes",
             yaxis=dict(
+                title="Count of nodes",
                 type="log",
                 tickvals=[1, 10, 100, 1000, 10000],
             ),
@@ -88,8 +72,8 @@ def plot_deg_centrality_hist(G):
                 title="Degree Centrality",
                 tickformat=".3f",
             ),
-            yaxis_title="Count of nodes",
             yaxis=dict(
+                title="Count of nodes",
                 type="log",
                 tickvals=[1, 10, 100, 1000, 10000],
             ),
@@ -101,7 +85,7 @@ def plot_deg_centrality_hist(G):
 def compute_deg_centrality(G):
     deg_centrality = nk.centrality.DegreeCentrality(G)
     deg_centrality.run()
-    return deg_centrality.ranking()[:10]
+    return deg_centrality.ranking()
 
 
 def compute_betweenness_centrality(G, samples=1000, seed=42):
@@ -109,7 +93,7 @@ def compute_betweenness_centrality(G, samples=1000, seed=42):
 
     betweenness_centrality = nk.centrality.EstimateBetweenness(G, samples)
     betweenness_centrality.run()
-    return betweenness_centrality.ranking()[:10]
+    return betweenness_centrality
 
 
 def compute_community_detection(G):
@@ -126,11 +110,31 @@ def plot_communities(communities):
         layout=go.Layout(
             title="Community Size Distribution",
             xaxis_title="Community Size",
-            yaxis_title="Count of Communities",
             yaxis=dict(
+                title="Count of communities",
                 type="log",
                 tickvals=[1, 10, 100, 1000],
                 ticktext=["1", "10", "100", "1000"],
+            ),
+        ),
+    )
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def plot_betweenness_centrality_hist(betweenness):
+    values = betweenness.scores()
+    n = G.number_of_nodes()
+    values = [v / (n * (n - 1) / 2) for v in values]
+
+    fig = go.Figure(
+        data=[go.Histogram(x=values, xbins=dict(start=0, end=max(values), size=0.002))],
+        layout=go.Layout(
+            title="Betweenness Centrality Distribution",
+            xaxis_title="Betweenness Centrality",
+            yaxis=dict(
+                title="Count of nodes",
+                type="log",
+                tickvals=[1, 10, 100, 1000, 10000],
             ),
         ),
     )
@@ -231,7 +235,12 @@ with tab2:
 
     deg_ranking = compute_deg_centrality(G2)
 
-    betweenness_ranking = compute_betweenness_centrality(G2, samples=1000, seed=42)
+    betweenness_centrality = compute_betweenness_centrality(G2, samples=1000, seed=42)
+    n = G2.numberOfNodes()
+    betweenness_ranking = [
+        (node, score / ((n - 1) * (n - 2)))
+        for node, score in betweenness_centrality.ranking()
+    ][:10]
 
     with left:
         st.subheader("Top 10 Nodes by Degree Centrality")
@@ -241,7 +250,7 @@ with tab2:
             ).style.format({"Degree Centrality": "{:.0f}"})
         )
         st.write(
-            "271, 144, and 80 are the most central nodes. They are top of the charts for both betweenness and degree centrality, "
+            "271, 144, and 191 are the most central nodes. They are top of the charts for degree centrality, "
             "which suggests they are likely influential communicators in the network."
         )
     with right:
@@ -252,10 +261,10 @@ with tab2:
         st.dataframe(
             pd.DataFrame(
                 betweenness_ranking, columns=["Node", "Betweenness Centrality"]
-            ).style.format({"Betweenness Centrality": "{:.0f}"})
+            ).style.format({"Betweenness Centrality": "{:.6f}"})
         )
     with right:
-        pass
+        plot_betweenness_centrality_hist(betweenness_centrality)
 
 with tab3:
     st.header("Community Detection")
